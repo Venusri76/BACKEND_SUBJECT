@@ -15,26 +15,34 @@
     exit();
    }
   
-  if ($_SERVER["REQUEST_METHOD"] == "POST") {
+   if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email'];
-    $password = $_POST['password'];
-    $stmt = $con->prepare("SELECT id, name FROM users WHERE email = ? AND password = ?");
-    $stmt->bind_param("ss", $email, $password);
+    $plain_password = $_POST['password'];
+    $stmt = $con->prepare("SELECT id, name, password FROM users WHERE email = ?");
+    $stmt->bind_param("s", $email);
     $stmt->execute();
     $stmt->store_result();
-    if($stmt->num_rows > 0){
-      $stmt->bind_result($id, $name);
-      $stmt->fetch();
-      $_SESSION['user_id']= $id;
-      $_SESSION['user_email']= $email;
-      $_SESSION['user_name']= $name;
-      header("Location: dashboard.php");
-      exit();
-    }else{
-      error_alert("login.php");
+
+    if ($stmt->num_rows > 0) {
+        $stmt->bind_result($id, $name, $stored_hash);
+        $stmt->fetch();
+        if (password_verify($plain_password, $stored_hash)) {
+            $_SESSION['user_id'] = $id;
+            $_SESSION['user_email'] = $email;
+            $_SESSION['user_name'] = $name;
+
+            header("Location: dashboard.php");
+            exit();
+        } else {
+            error_alert("login.php");
+        }
+    } else {
+        error_alert("login.php");
     }
+
     $stmt->close();
-  }
+}
+
 ?>
 
 <!DOCTYPE html>
